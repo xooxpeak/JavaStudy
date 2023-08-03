@@ -29,7 +29,9 @@ public class DeptServiceImpl implements DeptService {
 		}
 	}
 	
-	// < select 기능하는 메서드 >
+	
+	
+	// ▣ select 기능하는 메서드
 	// Connection 까지만 얻는다. 나머지 작업은 DAO에서 처리
 	@Override
 	public List<DeptDTO> findAll(){
@@ -56,7 +58,8 @@ public class DeptServiceImpl implements DeptService {
 	}
 
 	
-	// < insert 기능하는 메서드 >
+	
+	// ▣ insert 기능하는 메서드 
 	// Connection 까지만 얻는다. 나머지 작업은 DAO에서 처리
 	@Override
 	public int insert(DeptDTO dto) throws DuplicatedDeptnoException {
@@ -82,7 +85,9 @@ public class DeptServiceImpl implements DeptService {
 	}
 
 	
-	// < update 기능하는 메서드 >
+	
+	
+	// ▣ update 기능하는 메서드 
 	// Connection 까지만 얻는다. 나머지 작업은 DAO에서 처리
 	@Override
 	public int update(DeptDTO dto) {
@@ -105,6 +110,86 @@ public class DeptServiceImpl implements DeptService {
 			}
 		}
 		return n;
+	}
+
+	
+	
+	
+	// ▣ DELETE 작업 
+	@Override
+	public int delete(int deptno) {
+		// Connection때문에 try~catch 필요
+		// close() 해야되는 것들은 finally에 쓰기 위해 다 바깥에 
+		int n = 0;
+		Connection con = null;
+		try {
+			con = DriverManager.getConnection(url, userid, passwd);
+			// DAO 연동
+			DeptDAO dao = new DeptDAO();
+			n = dao.delete(con, deptno);
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}finally {
+			try {
+				if(con != null)con.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return n;
+	}
+
+
+	// ▣ updateAndDelete 작업 (트랜잭션 처리)
+	@Override
+	public int updateAndDelete(DeptDTO dto, int deptno) {
+		
+		int n = 0;
+		Connection con = null;
+		try {
+			con = DriverManager.getConnection(url, userid, passwd);
+			// DAO 연동
+			DeptDAO dao = new DeptDAO();
+			
+			// ----------------트랜잭션---------------------
+			// 여러 개의 작업을 하나의 작업으로 처리할 때 씀
+			// 둘 다 성공해서 실제 DB에 반영 => COMMIT
+			// 또는
+			// 둘 중에 하나라도 실패하면 모두 취소 => ROLLBACK
+			
+			// AutoCommit을 비활성화
+			con.setAutoCommit(false);
+			
+			// 수정
+			n = dao.update(con, dto);
+			// 삭제
+			n = dao.delete(con, deptno);
+			// -------------------------------------------
+			
+			con.commit();   // 아무 문제가 없어서 커밋한다.
+		}catch(SQLException e) {
+			//catch에 잡혔다면 둘 중에 하나는 에러가 있다는 거니까 rollback
+			try {
+				if(con != null)con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			e.printStackTrace();
+		}finally {
+			try {
+				if(con != null)con.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return n;
+	}
+
+	private void rollback() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

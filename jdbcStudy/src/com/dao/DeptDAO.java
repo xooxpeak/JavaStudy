@@ -17,11 +17,12 @@ import com.exception.DuplicatedDeptnoException;
 // 주의할 점 : Connection을 DAO 클래스에서 close()하면 안되고 반드시 Service 클래스에서 close() 시켜야한다.
 public class DeptDAO {
 
-	// < select 기능하는 메서드 >
-	public List<DeptDTO> findAll(Connection con){
+	// ▣ select 작업
+	public List<DeptDTO> findAll(Connection con){    // DAO는 service에서 Connection을 꼭 전달받는다!
 		
 		// 다형성 통해 DeptDTO 누적용
 		List<DeptDTO> list = new ArrayList<DeptDTO>();
+		// 블록 밖에서 쓰기 위해 바깥에서 선언을 해준다.
 		PreparedStatement pstmt=null;
 	    ResultSet rs = null;
 	    try{
@@ -41,12 +42,16 @@ public class DeptDAO {
 	    }catch(SQLException e){
 	    	e.printStackTrace();
 	    }finally {
+	    	//finally
 			try {
 				//역순
+				// null 오류는 조건문(if)으로 처리해야함
+				// rs나 pstmt가 null일 수도 있기 때문에 확인하고 close() 하는 작업
 				if(rs != null)rs.close();
 				if(pstmt != null)pstmt.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
+//				System.out.println(e.getMessage());     이것도 가능
 			}
 		}
 		
@@ -56,7 +61,7 @@ public class DeptDAO {
 	
 	
 	
-// < insert 작업 >
+// ▣ insert 작업 
 	public int insert(Connection con, DeptDTO dto ) throws DuplicatedDeptnoException {
 		int num = 0;
 		PreparedStatement pstmt=null;
@@ -82,6 +87,11 @@ public class DeptDAO {
 		return num;
 }
 
+	
+	
+	
+	
+// ▣ UPDATE 작업 	
 public int update(Connection con, DeptDTO dto) {
 	int num = 0;
 	PreparedStatement pstmt=null;
@@ -105,7 +115,32 @@ public int update(Connection con, DeptDTO dto) {
 	return num;
 }
 
-	
+
+
+
+// ▣ DELETE 작업 
+	public int delete(Connection con, int deptno) {
+		
+		// return 위해 밖에서 선언해주기
+		int n = 0;
+		// finally에 쓰기위해 밖에서 선언해주기
+		PreparedStatement pstmt = null;
+		try {
+			String sql = "delete from dept where deptno=?";
+			pstmt = con.prepareStatement(sql);
+			pstmt.setInt(1, deptno);    // ?에 값 넣어주기
+			n = pstmt.executeUpdate();
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}finally {    // close()작업
+			try {
+				if(pstmt != null) pstmt.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return 0;
+	}
 }	
 
 
